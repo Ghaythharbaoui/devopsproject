@@ -1,7 +1,7 @@
 {
-  "name": "hhh",
+  "name": "back-end",
   "version": "1.0.0",
-  "description": "",
+  "description": "is asimple back-end for the devoops project",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
