@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/Ghaythharbaoui/devopsproject/issues"
   },
-  "homepage": "https://github.com/Ghaythharbaoui/devopsproject#readme"
+  "homepage": "https://github.com/Ghaythharbaoui/devopsproject#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
 }
