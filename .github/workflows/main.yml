@@ -68,17 +68,15 @@ jobs:
           echo "Attente du démarrage du serveur..."
           sleep 10
 
-      - name: Scan OWASP ZAP
-        # Utilisation de Docker pour lancer ZAP
-        # --network host permet à ZAP de voir le localhost:3000 du runner
+      - name: Run OWASP ZAP Scan
         run: |
+          # Correction : Utilisation de la nouvelle image 'zaproxy/zap-stable'
           docker run --network host \
             -v $(pwd):/zap/wrk/:rw \
-            -t owasp/zap2docker-stable zap-baseline.py \
+            -t zaproxy/zap-stable zap-baseline.py \
             -t http://localhost:3000 \
             -r zap_report.html \
-            -I 
-            # -I permet de ne pas échouer le build sur les warnings (recommandé pour un projet étudiant)
+            -I
 
       - name: Sauvegarder le rapport DAST
         uses: actions/upload-artifact@v4
