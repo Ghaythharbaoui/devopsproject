@@ -19,7 +19,7 @@ jobs:
       - name: Configuration Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
 
       - name: Installation des dépendances
         run: npm install
@@ -110,4 +110,4 @@ jobs:
           context: .
           push: true
           # REMPLACE 'ton-user' PAR TON VRAI PSEUDO DOCKER HUB
-          tags: ${{ secrets.DOCKER_USERNAME }}/back-end:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/devops-project:latest
