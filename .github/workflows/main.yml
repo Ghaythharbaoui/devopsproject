@@ -1,6 +1,5 @@
 name: CI/CD Complete Pipeline
 
-# Déclencheurs : Push sur main ou Pull Requests
 on:
   push:
     branches: [ "main" ]
@@ -9,52 +8,7 @@ on:
 
 jobs:
   # --- ÉTAPE 1 : BUILD & TEST ---
-  # Objectif : Vérifier que le code s'installe et se lance correctement [cite: 10, 40]
   build-and-test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout du code
-        uses: actions/checkout@v4
-
-      - name: Configuration Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Installation des dépendances
-        run: npm install
-
-      # Si tu as des tests unitaires (Jest/Mocha), c'est ici qu'ils s'exécutent
-      # Pour l'instant, on vérifie juste la syntaxe
-      - name: Test basique (Health Check)
-        run: |
-          node -e "console.log('Syntaxe du code OK')"
-
-  # --- ÉTAPE 2 : SÉCURITÉ SAST (Statique) ---
-  # Objectif : Scanner le code source pour trouver des failles [cite: 17, 29]
-  security-sast:
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      actions: read
-      contents: read
-    steps:
-      - name: Checkout du code
-        uses: actions/checkout@v4
-
-      - name: Initialisation CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript
-
-      - name: Analyse du code
-        uses: github/codeql-action/analyze@v3
-
-  # --- ÉTAPE 3 : SÉCURITÉ DAST (Dynamique) ---
-  # Objectif : Lancer l'app et l'attaquer avec OWASP ZAP [cite: 17, 29]
-    security-dast:
-    needs: build-and-test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -68,18 +22,57 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Start Application & Wait
+      # Vérification simple que le code est syntaxiquement correct
+      - name: Basic Health Check
+        run: node -e "console.log('Syntaxe du code OK')"
+
+  # --- ÉTAPE 2 : SÉCURITÉ SAST (CodeQL) ---
+  security-sast:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # --- ÉTAPE 3 : SÉCURITÉ DAST (OWASP ZAP) ---
+  security-dast:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies & Start App
         run: |
-          # Démarrer l'application en arrière-plan
+          npm install
+          # Démarrage en arrière-plan
           npm start &
           
-          # Attendre que le port 3000 soit accessible (bien plus fiable que 'sleep')
-          echo "Waiting for server on port 3000..."
+          # ATTENTE INTELLIGENTE (Fix Connection Refused)
+          # On attend que le port 3000 réponde
+          echo "Waiting for server to be available..."
           npx wait-on http://localhost:3000 --timeout 60000
 
       - name: Run OWASP ZAP Scan
         run: |
-          # AJOUT DE '-u 0' pour régler le Permission Denied (root user)
+          # FIX: Image 'zaproxy/zap-stable' + option '-u 0' (root) pour les permissions
           docker run --network host -u 0 \
             -v $(pwd):/zap/wrk/:rw \
             -t zaproxy/zap-stable zap-baseline.py \
@@ -88,34 +81,31 @@ jobs:
             -I
 
       - name: Upload ZAP Report
-        # Cette étape s'exécute toujours, même si ZAP trouve des failles
-        if: always()
+        if: always() # Télécharger le rapport même si des failles sont trouvées
         uses: actions/upload-artifact@v4
         with:
           name: zap-security-report
           path: zap_report.html
+
   # --- ÉTAPE 4 : DOCKER BUILD & PUSH ---
-  # Objectif : Créer l'image et l'envoyer sur le Hub [cite: 26, 40]
   docker-publish:
-    # On ne publie que si les tests et le SAST sont passés
     needs: [build-and-test, security-sast]
-    # On ne publie que sur la branche main (pas sur les PR)
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout du code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Login Docker Hub
+      - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
+          username: ghayth
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build et Push
+      - name: Build and Push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          # REMPLACE 'ton-user' PAR TON VRAI PSEUDO DOCKER HUB
-          tags: ${{ secrets.DOCKER_USERNAME }}/devops-project:latest
+          # Ton image sera ici :
+          tags: ghayth/devops-project:latest
