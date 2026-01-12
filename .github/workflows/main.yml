@@ -53,37 +53,47 @@ jobs:
 
   # --- ÉTAPE 3 : SÉCURITÉ DAST (Dynamique) ---
   # Objectif : Lancer l'app et l'attaquer avec OWASP ZAP [cite: 17, 29]
-  security-dast:
+    security-dast:
     needs: build-and-test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout du code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup et Démarrage App
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Start Application & Wait
         run: |
-          npm install
-          # Lancement en arrière-plan (&)
+          # Démarrer l'application en arrière-plan
           npm start &
-          echo "Attente du démarrage du serveur..."
-          sleep 10
+          
+          # Attendre que le port 3000 soit accessible (bien plus fiable que 'sleep')
+          echo "Waiting for server on port 3000..."
+          npx wait-on http://localhost:3000 --timeout 60000
 
       - name: Run OWASP ZAP Scan
         run: |
-          # Correction : Utilisation de la nouvelle image 'zaproxy/zap-stable'
-          docker run --network host \
+          # AJOUT DE '-u 0' pour régler le Permission Denied (root user)
+          docker run --network host -u 0 \
             -v $(pwd):/zap/wrk/:rw \
             -t zaproxy/zap-stable zap-baseline.py \
             -t http://localhost:3000 \
             -r zap_report.html \
             -I
 
-      - name: Sauvegarder le rapport DAST
+      - name: Upload ZAP Report
+        # Cette étape s'exécute toujours, même si ZAP trouve des failles
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: zap-security-report
           path: zap_report.html
-
   # --- ÉTAPE 4 : DOCKER BUILD & PUSH ---
   # Objectif : Créer l'image et l'envoyer sur le Hub [cite: 26, 40]
   docker-publish:
