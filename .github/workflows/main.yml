@@ -22,7 +22,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Vérification simple que le code est syntaxiquement correct
       - name: Basic Health Check
         run: node -e "console.log('Syntaxe du code OK')"
 
@@ -59,20 +58,41 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install dependencies & Start App
+      - name: Install & Start App (Debug Mode)
         run: |
           npm install
-          # Démarrage en arrière-plan
-          npm start &
           
-          # ATTENTE INTELLIGENTE (Fix Connection Refused)
-          # On attend que le port 3000 réponde
-          echo "Waiting for server to be available..."
-          npx wait-on http://localhost:3000 --timeout 60000
+          # Lancement de l'app en redirigeant les logs vers un fichier pour debug
+          echo "Démarrage du serveur..."
+          npm start > server.log 2>&1 &
+          PID=$!
+          
+          # On attend 10s pour voir si ça crash tout de suite
+          sleep 10
+          
+          # Vérification si le processus est mort
+          if ! ps -p $PID > /dev/null; then
+            echo "❌ ERREUR FATALE : L'application a planté au démarrage !"
+            echo "--- LOGS DU SERVEUR ---"
+            cat server.log
+            exit 1
+          fi
+          
+          echo "✅ L'application tourne. Vérification de l'accès au port 3000..."
+          
+          # 'tcp:3000' est plus fiable que 'http' pour vérifier l'ouverture du port
+          npx wait-on tcp:3000 --timeout 60000
+
+      # Si l'étape précédente échoue, on affiche les logs pour comprendre pourquoi
+      - name: Show Server Logs on Failure
+        if: failure()
+        run: |
+          echo "=== LOGS DE L'APPLICATION ==="
+          cat server.log || echo "Pas de logs trouvés."
 
       - name: Run OWASP ZAP Scan
         run: |
-          # FIX: Image 'zaproxy/zap-stable' + option '-u 0' (root) pour les permissions
+          # Utilisation de l'image 'zaproxy' et de l'option '-u 0' (root)
           docker run --network host -u 0 \
             -v $(pwd):/zap/wrk/:rw \
             -t zaproxy/zap-stable zap-baseline.py \
@@ -81,7 +101,7 @@ jobs:
             -I
 
       - name: Upload ZAP Report
-        if: always() # Télécharger le rapport même si des failles sont trouvées
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: zap-security-report
@@ -107,5 +127,4 @@ jobs:
         with:
           context: .
           push: true
-          # Ton image sera ici :
           tags: ghayth/devops-project:latest
