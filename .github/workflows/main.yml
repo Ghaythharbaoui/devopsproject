@@ -127,4 +127,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghayth/devops-project:latest
+          tags: ghayth/devops-backe-end:latest
