@@ -127,4 +127,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghayth/backe-end:latest
+          tags: ghaythharbaoui/backe-end:latest
