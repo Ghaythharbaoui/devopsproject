@@ -109,7 +109,7 @@ jobs:
 
   # --- ÉTAPE 4 : DOCKER BUILD & PUSH ---
   docker-publish:
-    needs: [build-and-test, security-sast]
+    needs: [build-and-test, security-sast, security-dast]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
