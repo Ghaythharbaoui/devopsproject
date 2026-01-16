@@ -1,20 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: node-api-deployment
+  name: node-backend-deployment
+  labels:
+    app: node-backend
 spec:
-  replicas: 2
+  replicas: 3 # Number of copies of your app to run
   selector:
     matchLabels:
-      app: node-api
+      app: node-backend
   template:
     metadata:
       labels:
-        app: node-api
+        app: node-backend
     spec:
       containers:
-      - name: node-api
-        image: ghaythharbaoui/backe-end:tagname
-        imagePullPolicy: IfNotPresent
+      - name: node-app
+        image: sha256:a014f0f3ee179525cda783389cb8042680903f095c595e15456c219662cc3a8b 
         ports:
-        - containerPort: 3000
+        - containerPort: 3001 # The port your Node.js app listens on
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        # If you have environment variables, add them here:
+        env:
+        - name: NODE_ENV
+          value: "production"
