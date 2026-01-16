@@ -36,7 +36,7 @@ describe('Fibonacci Functions', () => {
       expect(fibDP(2)).toBe(1);
       expect(fibDP(3)).toBe(2);
       expect(fibDP(4)).toBe(3);
-      expect(fibDP(5)).toBe(4);
+      expect(fibDP(5)).toBe(5);
       expect(fibDP(6)).toBe(8);
     });
 
