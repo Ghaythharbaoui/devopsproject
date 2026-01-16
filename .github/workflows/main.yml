@@ -25,9 +25,28 @@ jobs:
       - name: Basic Health Check
         run: node -e "console.log('Syntaxe du code OK')"
 
-  # --- ÉTAPE 2 : SÉCURITÉ SAST (CodeQL) ---
-  security-sast:
+  # --- ÉTAPE 2 : UNIT TESTS ---
+  unit-tests:
     needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Unit Tests
+        run: npm test
+
+  # --- ÉTAPE 3 : SÉCURITÉ SAST (CodeQL) ---
+  security-sast:
+    needs: [build-and-test, unit-tests]
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -47,7 +66,7 @@ jobs:
 
   # --- ÉTAPE 3 : SÉCURITÉ DAST (OWASP ZAP) ---
   security-dast:
-    needs: build-and-test
+    needs: [build-and-test, unit-tests]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -107,9 +126,9 @@ jobs:
           name: zap-security-report
           path: zap_report.html
 
-  # --- ÉTAPE 4 : DOCKER BUILD & PUSH ---
+  # --- ÉTAPE 5 : DOCKER BUILD & PUSH ---
   docker-publish:
-    needs: [build-and-test, security-sast, security-dast]
+    needs: [build-and-test, unit-tests, security-sast, security-dast]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
