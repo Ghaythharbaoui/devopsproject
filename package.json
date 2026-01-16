@@ -4,7 +4,7 @@
   "description": "is asimple back-end for the devoops project",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "node index.js"
   },
   "repository": {
@@ -21,5 +21,8 @@
     "express": "^5.2.1",
     "prom-client": "^15.1.3",
     "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0"
   }
 }
