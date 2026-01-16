@@ -97,10 +97,10 @@ jobs:
             exit 1
           fi
           
-          echo "✅ L'application tourne. Vérification de l'accès au port 3000..."
+          echo "✅ L'application tourne. Vérification de l'accès au port 3001..."
           
-          # 'tcp:3000' est plus fiable que 'http' pour vérifier l'ouverture du port
-          npx wait-on tcp:3000 --timeout 60000
+          # 'tcp:3001' est plus fiable que 'http' pour vérifier l'ouverture du port
+          npx wait-on tcp:3001 --timeout 60000
 
       # Si l'étape précédente échoue, on affiche les logs pour comprendre pourquoi
       - name: Show Server Logs on Failure
